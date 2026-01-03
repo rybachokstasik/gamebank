@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clicker Bank Pro</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background: #0f172a; color: #e2e8f0; font-family: sans-serif; }
+        .card { background: #1e293b; border: none; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+        .btn-click { 
+            width: 160px; height: 160px; border-radius: 50%; border: 8px solid #334155; 
+            background: linear-gradient(145deg, #f59e0b, #d97706); 
+            color: white; font-weight: 800; font-size: 1.5rem; cursor: pointer;
+            box-shadow: 0 0 25px rgba(245,158,11,0.4); transition: 0.1s;
+        }
+        .btn-click:active { transform: scale(0.92); }
+        .income-badge { background: #059669; color: white; padding: 4px 12px; border-radius: 20px; font-size: 0.9rem; }
+        .hidden { display: none; }
+        .card-number { letter-spacing: 2px; color: #94a3b8; }
+    </style>
+</head>
+<body class="container py-5">
+
+    <div id="authBox" class="mx-auto" style="max-width: 400px;">
+        <div class="card p-4 text-center">
+            <h2 class="mb-4">💰 ClickBank</h2>
+            <input type="text" id="user" class="form-control mb-2" placeholder="Логін">
+            <input type="password" id="pass" class="form-control mb-3" placeholder="Пароль">
+            <button onclick="login()" class="btn btn-primary w-100 mb-2">Увійти</button>
+            <button onclick="register()" class="btn btn-outline-light w-100">Створити акаунт</button>
+        </div>
+    </div>
+
+    <div id="mainBox" class="hidden">
+        <div class="row g-4">
+            <div class="col-lg-5 text-center">
+                <div class="card p-4 mb-4">
+                    <p class="mb-1 card-number" id="cardNum">0000 0000 0000 0000</p>
+                    <h1 class="display-4 fw-bold text-warning" id="balanceDisplay">$0</h1>
+                    <div class="mt-2">
+                        <span class="income-badge">Дохід: +<span id="incomeDisplay">0</span>$ / 5сек</span>
+                    </div>
+                </div>
+                <button class="btn-click shadow-lg" onclick="doClick()">CLICK!</button>
+            </div>
+
+            <div class="col-lg-7">
+                <div class="card p-4 mb-4 border-start border-warning border-4">
+                    <h5>🛒 Магазин апгрейдів</h5>
+                    <p class="small text-muted">Купуйте автоклікери, щоб заробляти пасивно.</p>
+                    <button onclick="buyUpgrade()" class="btn btn-warning fw-bold">Купити Автоклікер ($100)</button>
+                </div>
+
+                <div class="card p-4 mb-4">
+                    <h5>💸 Переказ коштів</h5>
+                    <div class="input-group">
+                        <input type="text" id="target" class="form-control" placeholder="Номер карти отримувача">
+                        <input type="number" id="amount" class="form-control" placeholder="Сума">
+                        <button onclick="sendMoney()" class="btn btn-success px-4">Відправити</button>
+                    </div>
+                </div>
+
+                <div class="card p-4">
+                    <h5>📜 Історія виплат</h5>
+                    <div id="history" class="mt-2"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function req(url, body) {
+            const res = await fetch(url, {
+                method: body ? 'POST' : 'GET',
+                headers: {'Content-Type': 'application/json'},
+                body: body ? JSON.stringify(body) : null
+            });
+            return res.json();
+        }
+
+        async function login() {
+            const res = await req('/api/login', {username: user.value, password: pass.value});
+            if (res.success) init(); else alert(res.error);
+        }
+
+        async function register() {
+            const res = await req('/api/register', {username: user.value, password: pass.value});
+            if (res.success) alert('Реєстрація успішна!'); else alert(res.error);
+        }
+
+        async function init() {
+            const data = await req('/api/me');
+            if (data.error) return;
+            authBox.classList.add('hidden');
+            mainBox.classList.remove('hidden');
+            
+            cardNum.innerText = data.card_number.match(/.{1,4}/g).join(' ');
+            balanceDisplay.innerText = '$' + data.balance.toFixed(2);
+            incomeDisplay.innerText = data.income;
+            updateHistory();
+        }
+
+        async function doClick() {
+            const res = await req('/api/click', {});
+            balanceDisplay.innerText = '$' + res.balance.toFixed(2);
+        }
+
+        async function buyUpgrade() {
+            const res = await req('/api/buy-upgrade', {});
+            if (res.success) {
+                init();
+            } else alert(res.error);
+        }
+
+        async function sendMoney() {
+            const res = await req('/api/transfer', {targetCard: target.value.replace(/\s/g, ''), amount: amount.value});
+            if (res.success) {
+                alert('Гроші відправлено!');
+                init();
+            } else alert(res.error);
+        }
+
+        async function updateHistory() {
+            const txs = await req('/api/transactions');
+            history.innerHTML = txs.length ? txs.map(t => `
+                <div class="d-flex justify-content-between border-bottom py-2">
+                    <span>На карту отримувача (${t.receiver})</span>
+                    <span class="text-danger fw-bold">-$${t.amount}</span>
+                </div>
+            `).join('') : '<p class="text-muted">Транзакцій поки немає</p>';
+        }
+
+        // Автоматичний збір доходу кожні 5 секунд
+        setInterval(async () => {
+            if (!mainBox.classList.contains('hidden')) {
+                const res = await req('/api/collect', {});
+                if (res.added > 0) {
+                    const current = parseFloat(balanceDisplay.innerText.replace('$', ''));
+                    balanceDisplay.innerText = '$' + (current + res.added).toFixed(2);
+                }
+            }
+        }, 5000);
+    </script>
+</body>
+</html>
