@@ -3,144 +3,211 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Clicker Bank Pro</title>
+    <title>NEON BANK | Persistent & Live</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        body { background: #0f172a; color: #e2e8f0; font-family: sans-serif; }
-        .card { background: #1e293b; border: none; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
-        .btn-click { 
-            width: 160px; height: 160px; border-radius: 50%; border: 8px solid #334155; 
-            background: linear-gradient(145deg, #f59e0b, #d97706); 
-            color: white; font-weight: 800; font-size: 1.5rem; cursor: pointer;
-            box-shadow: 0 0 25px rgba(245,158,11,0.4); transition: 0.1s;
+        :root { --neon: #00f2ff; --bg: #0a0b10; --card-bg: #161b22; --gold: #fbbf24; }
+        body { background: var(--bg); color: white; font-family: 'Segoe UI', sans-serif; overflow-x: hidden; }
+        
+        .main-card { background: var(--card-bg); border: 1px solid #30363d; border-radius: 20px; box-shadow: 0 0 20px rgba(0, 242, 255, 0.1); }
+        .bank-card { background: linear-gradient(135deg, #1d4ed8, #7e22ce); border-radius: 15px; padding: 25px; position: relative; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        
+        .btn-neon-click { 
+            width: 160px; height: 160px; border-radius: 50%; border: none;
+            background: radial-gradient(circle, #00f2ff, #0060ff);
+            box-shadow: 0 0 30px rgba(0, 242, 255, 0.6);
+            color: white; font-weight: bold; font-size: 1.5rem; cursor: pointer;
+            transition: 0.1s; outline: none; margin: 20px 0;
         }
-        .btn-click:active { transform: scale(0.92); }
-        .income-badge { background: #059669; color: white; padding: 4px 12px; border-radius: 20px; font-size: 0.9rem; }
+        .btn-neon-click:active { transform: scale(0.92); box-shadow: 0 0 15px var(--neon); }
+
+        .upgrade-btn { background: transparent; border: 2px solid var(--neon); color: var(--neon); border-radius: 10px; padding: 10px; width: 100%; font-weight: bold; transition: 0.3s; }
+        .upgrade-btn:hover { background: var(--neon); color: black; box-shadow: 0 0 15px var(--neon); }
+
+        .leader-item { background: #0d1117; border-radius: 10px; padding: 10px 15px; margin-bottom: 8px; border-left: 4px solid var(--neon); transition: 0.3s; }
+        .leader-item:first-child { border-left-color: var(--gold); background: rgba(251, 191, 36, 0.05); }
+
+        .form-control { background: #0d1117; border: 1px solid #30363d; color: white; }
+        .form-control:focus { background: #161b22; color: white; border-color: var(--neon); box-shadow: none; }
+        
         .hidden { display: none; }
-        .card-number { letter-spacing: 2px; color: #94a3b8; }
+        .income-text { color: #10b981; font-weight: bold; text-shadow: 0 0 10px rgba(16, 185, 129, 0.3); }
+        .history-item { border-bottom: 1px solid #30363d; padding: 8px 0; font-size: 0.85rem; opacity: 0.8; }
     </style>
 </head>
-<body class="container py-5">
+<body class="container py-4">
 
-    <div id="authBox" class="mx-auto" style="max-width: 400px;">
-        <div class="card p-4 text-center">
-            <h2 class="mb-4">💰 ClickBank</h2>
-            <input type="text" id="user" class="form-control mb-2" placeholder="Логін">
-            <input type="password" id="pass" class="form-control mb-3" placeholder="Пароль">
-            <button onclick="login()" class="btn btn-primary w-100 mb-2">Увійти</button>
-            <button onclick="register()" class="btn btn-outline-light w-100">Створити акаунт</button>
+    <div id="authBox" class="mx-auto mt-5 hidden" style="max-width: 400px;">
+        <div class="main-card p-5 text-center">
+            <h1 style="color: var(--neon); font-weight: 900; letter-spacing: 2px;">NEON BANK</h1>
+            <div class="mt-4">
+                <input type="text" id="user" class="form-control mb-3" placeholder="Нікнейм">
+                <input type="password" id="pass" class="form-control mb-4" placeholder="Пароль">
+                <button onclick="login()" class="btn btn-primary w-100 mb-3 shadow">УВІЙТИ</button>
+                <button onclick="register()" class="btn btn-link w-100 text-decoration-none" style="color: var(--neon);">РЕЄСТРАЦІЯ</button>
+            </div>
         </div>
     </div>
 
     <div id="mainBox" class="hidden">
         <div class="row g-4">
-            <div class="col-lg-5 text-center">
-                <div class="card p-4 mb-4">
-                    <p class="mb-1 card-number" id="cardNum">0000 0000 0000 0000</p>
-                    <h1 class="display-4 fw-bold text-warning" id="balanceDisplay">$0</h1>
-                    <div class="mt-2">
-                        <span class="income-badge">Дохід: +<span id="incomeDisplay">0</span>$ / 5сек</span>
+            <div class="col-lg-4 text-center">
+                <div class="bank-card text-start mb-4">
+                    <p class="small opacity-75 mb-4 text-uppercase fw-bold" style="font-size: 0.7rem;">Digital Asset Storage</p>
+                    <h5 id="cardNum" class="mb-4" style="letter-spacing: 3px; font-family: monospace;">**** **** **** ****</h5>
+                    <div class="d-flex justify-content-between align-items-end">
+                        <div>
+                            <p class="small opacity-50 mb-0">Поточний баланс</p>
+                            <h3 class="mb-0" id="balanceDisplay" style="font-weight: 800;">$0.00</h3>
+                        </div>
+                        <div class="text-end">
+                            <span class="income-text">+$<span id="incomeDisplay">0</span></span>
+                        </div>
                     </div>
                 </div>
-                <button class="btn-click shadow-lg" onclick="doClick()">CLICK!</button>
+                
+                <button class="btn-neon-click" onclick="doClick()">КЛІК!</button>
+                
+                <div class="main-card p-3 mt-3 text-start">
+                    <h6 class="text-uppercase mb-3" style="color: var(--gold); font-size: 0.8rem; letter-spacing: 1px;">🏆 Світовий рейтинг</h6>
+                    <div id="leaderboard"></div>
+                </div>
             </div>
 
-            <div class="col-lg-7">
-                <div class="card p-4 mb-4 border-start border-warning border-4">
-                    <h5>🛒 Магазин апгрейдів</h5>
-                    <p class="small text-muted">Купуйте автоклікери, щоб заробляти пасивно.</p>
-                    <button onclick="buyUpgrade()" class="btn btn-warning fw-bold">Купити Автоклікер ($100)</button>
-                </div>
-
-                <div class="card p-4 mb-4">
-                    <h5>💸 Переказ коштів</h5>
-                    <div class="input-group">
-                        <input type="text" id="target" class="form-control" placeholder="Номер карти отримувача">
-                        <input type="number" id="amount" class="form-control" placeholder="Сума">
-                        <button onclick="sendMoney()" class="btn btn-success px-4">Відправити</button>
+            <div class="col-lg-8">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="main-card p-4 h-100 border-top border-info border-3">
+                            <h6 class="text-uppercase mb-2" style="color: var(--neon);">💎 Апгрейд</h6>
+                            <p class="small text-muted mb-3">Автоматичний майнінг: +$2 / кожні 5с</p>
+                            <button onclick="buyUpgrade()" class="upgrade-btn">ІНВЕСТУВАТИ $100</button>
+                        </div>
                     </div>
-                </div>
-
-                <div class="card p-4">
-                    <h5>📜 Історія виплат</h5>
-                    <div id="history" class="mt-2"></div>
+                    <div class="col-md-6">
+                        <div class="main-card p-4 h-100 border-top border-warning border-3">
+                            <h6 class="text-uppercase mb-2" style="color: var(--gold);">🚀 Переказ</h6>
+                            <input type="text" id="target" class="form-control form-control-sm mb-2" placeholder="Номер картки">
+                            <input type="number" id="amount" class="form-control form-control-sm mb-2" placeholder="Сума">
+                            <button onclick="sendMoney()" class="btn btn-warning btn-sm w-100 fw-bold">ВІДПРАВИТИ ГРОШІ</button>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="main-card p-4">
+                            <h6 class="text-uppercase mb-3 opacity-50" style="font-size: 0.8rem;">Останні транзакції</h6>
+                            <div id="history"></div>
+                        </div>
+                    </div>
+                    <div class="col-12 text-center">
+                        <button onclick="logout()" class="btn btn-outline-danger btn-sm opacity-50">Вийти з акаунту</button>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
+    <audio id="sndClick" src="https://www.myinstants.com/media/sounds/coin-drop-1.mp3"></audio>
+    <audio id="sndBuy" src="https://www.myinstants.com/media/sounds/cash-register-purchase.mp3"></audio>
+    <audio id="sndSuccess" src="https://www.myinstants.com/media/sounds/success-fanfare-trumpets.mp3"></audio>
+
     <script>
-        async function req(url, body) {
-            const res = await fetch(url, {
-                method: body ? 'POST' : 'GET',
-                headers: {'Content-Type': 'application/json'},
-                body: body ? JSON.stringify(body) : null
-            });
-            return res.json();
+        function playSnd(id) {
+            const s = document.getElementById(id);
+            if(s) { s.currentTime = 0; s.play().catch(()=>{}); }
         }
+
+        async function req(url, body) {
+            try {
+                const res = await fetch(url, {
+                    method: body ? 'POST' : 'GET',
+                    headers: {'Content-Type': 'application/json'},
+                    body: body ? JSON.stringify(body) : null
+                });
+                return await res.json();
+            } catch(e) { return {error: 'Server offline'}; }
+        }
+
+        // ПЕРЕВІРКА ПРИ ЗАВАНТАЖЕННІ (F5)
+        window.onload = async () => {
+            const data = await req('/api/me');
+            if (data && !data.error) {
+                init(); // Якщо сесія є, одразу в гру
+            } else {
+                authBox.classList.remove('hidden'); // Якщо немає, показуємо вхід
+            }
+        };
 
         async function login() {
             const res = await req('/api/login', {username: user.value, password: pass.value});
-            if (res.success) init(); else alert(res.error);
+            if (res.success) { playSnd('sndSuccess'); init(); } else alert(res.error);
         }
 
         async function register() {
             const res = await req('/api/register', {username: user.value, password: pass.value});
-            if (res.success) alert('Реєстрація успішна!'); else alert(res.error);
+            if (res.success) alert('Успішно! Тепер увійдіть.'); else alert(res.error);
+        }
+
+        function logout() {
+            document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+            location.reload();
         }
 
         async function init() {
-            const data = await req('/api/me');
-            if (data.error) return;
             authBox.classList.add('hidden');
             mainBox.classList.remove('hidden');
-            
-            cardNum.innerText = data.card_number.match(/.{1,4}/g).join(' ');
-            balanceDisplay.innerText = '$' + data.balance.toFixed(2);
-            incomeDisplay.innerText = data.income;
-            updateHistory();
+            updateData();
         }
 
         async function doClick() {
+            playSnd('sndClick');
             const res = await req('/api/click', {});
-            balanceDisplay.innerText = '$' + res.balance.toFixed(2);
+            if (res.balance !== undefined) balanceDisplay.innerText = '$' + res.balance.toFixed(2);
         }
 
         async function buyUpgrade() {
             const res = await req('/api/buy-upgrade', {});
-            if (res.success) {
-                init();
-            } else alert(res.error);
+            if (res.success) { playSnd('sndBuy'); updateData(); } else alert(res.error);
         }
 
         async function sendMoney() {
             const res = await req('/api/transfer', {targetCard: target.value.replace(/\s/g, ''), amount: amount.value});
-            if (res.success) {
-                alert('Гроші відправлено!');
-                init();
-            } else alert(res.error);
+            if (res.success) { playSnd('sndBuy'); updateData(); alert('Успішно відправлено!'); } else alert(res.error);
         }
 
-        async function updateHistory() {
+        async function updateData() {
+            const data = await req('/api/me');
+            if (data && !data.error) {
+                cardNum.innerText = data.card_number.match(/.{1,4}/g).join(' ');
+                balanceDisplay.innerText = '$' + data.balance.toFixed(2);
+                incomeDisplay.innerText = data.income;
+            }
+
             const txs = await req('/api/transactions');
-            history.innerHTML = txs.length ? txs.map(t => `
-                <div class="d-flex justify-content-between border-bottom py-2">
-                    <span>На карту отримувача (${t.receiver})</span>
-                    <span class="text-danger fw-bold">-$${t.amount}</span>
-                </div>
-            `).join('') : '<p class="text-muted">Транзакцій поки немає</p>';
+            if(Array.isArray(txs)) {
+                history.innerHTML = txs.map(t => `<div class="history-item">Переказ <b>${t.receiver}</b>: <span class="text-danger">-$${t.amount}</span></div>`).join('') || 'Транзакцій немає';
+            }
+            
+            const leads = await req('/api/leaderboard');
+            if(Array.isArray(leads)) {
+                leaderboard.innerHTML = leads.map((l, i) => `
+                    <div class="leader-item">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="small fw-bold">${i+1}. ${l.username}</span>
+                            <span class="small" style="color: var(--neon)">$${l.balance.toFixed(0)}</span>
+                        </div>
+                    </div>
+                `).join('');
+            }
         }
 
-        // Автоматичний збір доходу кожні 5 секунд
+        // АВТОМАТИЧНЕ ОНОВЛЕННЯ КОЖНІ 2 СЕКУНДИ
         setInterval(async () => {
             if (!mainBox.classList.contains('hidden')) {
-                const res = await req('/api/collect', {});
-                if (res.added > 0) {
-                    const current = parseFloat(balanceDisplay.innerText.replace('$', ''));
-                    balanceDisplay.innerText = '$' + (current + res.added).toFixed(2);
-                }
+                // Збираємо пасивний дохід
+                const collect = await req('/api/collect', {});
+                // Оновлюємо всі цифри на екрані
+                updateData();
             }
-        }, 5000);
+        }, 2000);
     </script>
 </body>
 </html>
