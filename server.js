@@ -38,6 +38,7 @@ const auth = (req, res, next) => {
 app.post('/api/register', async (req, res) => {
     try {
         const { username, password } = req.body;
+        if(!username || !password) return res.status(400).json({error: 'Заповніть поля'});
         const hashed = await bcrypt.hash(password, 10);
         const card = Array.from({length: 16}, () => Math.floor(Math.random() * 10)).join('');
         db.run(`INSERT INTO Users (username, password, card_number) VALUES (?, ?, ?)`, [username, hashed, card], (err) => {
@@ -52,7 +53,7 @@ app.post('/api/login', (req, res) => {
     db.get(`SELECT * FROM Users WHERE username = ?`, [username], async (err, user) => {
         if (user && await bcrypt.compare(password, user.password)) {
             const token = jwt.sign({ id: user.id }, SECRET, { expiresIn: '24h' });
-            res.cookie('token', token, { httpOnly: true }).json({ success: true });
+            res.cookie('token', token, { httpOnly: true, path: '/' }).json({ success: true });
         } else { res.status(401).json({ error: 'Невірні дані' }); }
     });
 });
@@ -85,7 +86,7 @@ app.post('/api/collect', auth, (req, res) => {
 app.post('/api/buy-upgrade', auth, (req, res) => {
     const cost = 100;
     db.get(`SELECT balance FROM Users WHERE id = ?`, [req.userId], (err, user) => {
-        if (!user || user.balance < cost) return res.status(400).json({ error: 'Мало грошей' });
+        if (!user || user.balance < cost) return res.status(400).json({ error: 'Немає $100' });
         db.run(`UPDATE Users SET balance = balance - ?, income = income + 2 WHERE id = ?`, [cost, req.userId], () => {
             res.json({ success: true });
         });
@@ -95,6 +96,7 @@ app.post('/api/buy-upgrade', auth, (req, res) => {
 app.post('/api/transfer', auth, (req, res) => {
     const { targetCard, amount } = req.body;
     const val = parseFloat(amount);
+    if(val <= 0) return res.status(400).json({error: 'Невірна сума'});
     db.get(`SELECT balance FROM Users WHERE id = ?`, [req.userId], (err, sender) => {
         if (!sender || sender.balance < val) return res.status(400).json({ error: 'Мало грошей' });
         db.get(`SELECT id FROM Users WHERE card_number = ?`, [targetCard], (err, receiver) => {
