@@ -1,153 +1,31 @@
-<!DOCTYPE html>
-<html lang="uk">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NEON BANK | Chat Edition</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        :root { --neon: #00f2ff; --bg: #0a0b10; --card-bg: #161b22; }
-        body { background: var(--bg); color: white; font-family: 'Segoe UI', sans-serif; }
-        .main-card { background: var(--card-bg); border: 1px solid #30363d; border-radius: 20px; }
-        .bank-card { background: linear-gradient(135deg, #1d4ed8, #7e22ce); border-radius: 15px; padding: 20px; }
-        .chat-box { height: 300px; overflow-y: auto; background: #0d1117; border-radius: 10px; padding: 10px; font-size: 0.9rem; }
-        .msg { margin-bottom: 5px; border-bottom: 1px solid #21262d; padding-bottom: 2px; }
-        .msg b { color: var(--neon); }
-        .hidden { display: none !important; }
-        .form-control { background: #0d1117; border: 1px solid #30363d; color: white; }
-    </style>
-</head>
-<body class="container py-4">
+<div id="game" style="display:none">
+    <div class="header">
+        <h2 id="user-display">Вітаємо</h2>
+        <button onclick="logout()" style="background:red">Вийти</button>
+    </div>
 
-    <div id="authBox" class="mx-auto mt-5 hidden" style="max-width: 400px;">
-        <div class="main-card p-5 text-center">
-            <h2 style="color: var(--neon);">NEON BANK</h2>
-            <input type="text" id="user" class="form-control mb-2" placeholder="Логін">
-            <input type="password" id="pass" class="form-control mb-3" placeholder="Пароль">
-            <button onclick="login()" class="btn btn-primary w-100">Увійти</button>
-            <button onclick="register()" class="btn btn-link w-100 text-info">Реєстрація</button>
+    <div class="card">
+        <p>Ваша карта: <b id="card-num">****</b></p>
+        <h3>Баланс: <span id="balance">0</span> 🪙</h3>
+        <p>Прибуток за збір: <span id="income">0</span> 🪙</p>
+        <button class="btn-main" onclick="clickMoney()">КЛІК!</button>
+        <button class="btn-main" style="background:#28a745" onclick="collectMoney()">ЗІБРАТИ ПРИБУТОК</button>
+    </div>
+
+    <div class="card" style="background: #2c3e50; color: white;">
+        <h3>🎰 КАЗИНО 🎰</h3>
+        <input type="number" id="bet-amount" placeholder="Ставка">
+        <button onclick="playCasino()" style="background: #f1c40f; color: black;">Крутити!</button>
+        <p id="casino-result"></p>
+    </div>
+
+    <div class="card">
+        <h3>🚀 Магазин Апгрейдів</h3>
+        <div style="display:flex; flex-direction:column; gap:10px;">
+            <button onclick="buyUpgrade(100, 5)">Купити Відеокарту (Ціна: 100, +5 до збору)</button>
+            <button onclick="buyUpgrade(500, 30)">Купити Ферму (Ціна: 500, +30 до збору)</button>
+            <button onclick="buyUpgrade(2000, 150)">Купити Банк (Ціна: 2000, +150 до збору)</button>
         </div>
     </div>
 
-    <div id="mainBox" class="hidden">
-        <div class="row g-4">
-            <div class="col-lg-4 text-center">
-                <div class="bank-card text-start mb-3">
-                    <p id="cardNum" class="small mb-1">**** ****</p>
-                    <h3 id="balanceDisplay">$0.00</h3>
-                </div>
-                <button class="btn btn-info w-100 py-4 fw-bold" onclick="doClick()">КЛІКАТИ!</button>
-                <div class="main-card p-3 mt-3 text-start">
-                    <h6>🏆 Топ-5</h6>
-                    <div id="leaderboard" class="small"></div>
-                </div>
-            </div>
-
-            <div class="col-lg-4">
-                <div id="adminPanel" class="main-card p-3 border border-danger hidden mb-3">
-                    <h6 class="text-danger">🛡️ Адмін</h6>
-                    <input type="text" id="admTarget" class="form-control form-control-sm mb-1" placeholder="Карта">
-                    <input type="number" id="admAmount" class="form-control form-control-sm mb-1" placeholder="Сума">
-                    <button onclick="adminGive()" class="btn btn-danger btn-sm w-100">Видати</button>
-                </div>
-                <div class="main-card p-3">
-                    <h6>🚀 Переказ</h6>
-                    <input type="text" id="target" class="form-control mb-1" placeholder="Карта">
-                    <input type="number" id="amount" class="form-control mb-1" placeholder="Сума">
-                    <button onclick="sendMoney()" class="btn btn-warning w-100">Надіслати</button>
-                </div>
-            </div>
-
-            <div class="col-lg-4">
-                <div class="main-card p-3">
-                    <h6>💬 Глобальний чат</h6>
-                    <div id="chatBox" class="chat-box mb-2"></div>
-                    <div class="input-group">
-                        <input type="text" id="chatMsg" class="form-control form-control-sm" placeholder="Повідомлення...">
-                        <button onclick="sendChat()" class="btn btn-primary btn-sm">OK</button>
-                    </div>
-                </div>
-                <button onclick="logout()" class="btn btn-link text-danger w-100 mt-3">Вийти</button>
-            </div>
-        </div>
     </div>
-
-    <script>
-        async function req(url, body) {
-            const res = await fetch(url, {
-                method: body ? 'POST' : 'GET',
-                headers: {'Content-Type': 'application/json'},
-                body: body ? JSON.stringify(body) : null
-            });
-            return res.json();
-        }
-
-        window.onload = async () => {
-            const data = await req('/api/me');
-            if (data && !data.error) init(data); else authBox.classList.remove('hidden');
-        };
-
-        async function login() {
-            const res = await req('/api/login', {username: user.value, password: pass.value});
-            if (res.success) location.reload(); else alert('Помилка');
-        }
-
-        async function register() {
-            await req('/api/register', {username: user.value, password: pass.value});
-            alert('Створено!');
-        }
-
-        function logout() {
-            document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-            location.reload();
-        }
-
-        function init(user) {
-            authBox.classList.add('hidden');
-            mainBox.classList.remove('hidden');
-            if(user.isAdmin) adminPanel.classList.remove('hidden');
-            updateData();
-        }
-
-        async function doClick() {
-            const res = await req('/api/click', {});
-            balanceDisplay.innerText = '$' + res.balance.toFixed(2);
-        }
-
-        async function sendChat() {
-            if(!chatMsg.value) return;
-            await req('/api/chat', { text: chatMsg.value });
-            chatMsg.value = '';
-            updateChat();
-        }
-
-        async function updateChat() {
-            const msgs = await req('/api/chat');
-            chatBox.innerHTML = msgs.map(m => `<div class="msg"><b>${m.username}:</b> ${m.text}</div>`).join('');
-            chatBox.scrollTop = chatBox.scrollHeight;
-        }
-
-        async function updateData() {
-            const data = await req('/api/me');
-            cardNum.innerText = data.card_number;
-            balanceDisplay.innerText = '$' + data.balance.toFixed(2);
-            
-            const leads = await req('/api/leaderboard');
-            leaderboard.innerHTML = leads.map(l => `<div>${l.username}: $${l.balance.toFixed(0)}</div>`).join('');
-            updateChat();
-        }
-
-        async function adminGive() {
-            await req('/api/admin/give', {targetCard: admTarget.value, amount: admAmount.value});
-            alert('Гроші видано!');
-        }
-
-        async function sendMoney() {
-            const res = await req('/api/transfer', {targetCard: target.value, amount: amount.value});
-            if(res.success) alert('Відправлено!'); else alert(res.error);
-        }
-
-        setInterval(() => { if(!mainBox.classList.contains('hidden')) { req('/api/collect', {}); updateData(); } }, 2000);
-    </script>
-</body>
-</html>
