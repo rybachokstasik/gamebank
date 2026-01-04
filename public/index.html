@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NEON BANK v3.0</title>
+    <title>NEON BANK v3.5 FIXED</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body { background: #0a0b10; color: white; font-family: 'Consolas', sans-serif; }
@@ -12,8 +12,8 @@
         .btn-neon { background: #00f2ff; border: none; font-weight: bold; width: 100%; padding: 10px; transition: 0.2s; }
         .btn-neon:active { transform: scale(0.95); }
         .hidden { display: none !important; }
-        .admin-table { font-size: 0.8rem; width: 100%; color: #0f0; }
-        .admin-table td { border: 1px solid #333; padding: 5px; }
+        .admin-table { font-size: 0.8rem; width: 100%; color: #0f0; border-collapse: collapse; }
+        .admin-table th, .admin-table td { border: 1px solid #333; padding: 5px; }
     </style>
 </head>
 <body class="container py-4">
@@ -38,17 +38,26 @@
                     </div>
                     <h3 id="cardDisplay" class="my-3">.... ....</h3>
                     <h2 id="balanceDisplay" class="neon-text">$0.00</h2>
-                    <small class="text-muted">Пасивний дохід: <span id="incomeDisplay">0</span>/збір</small>
+                    <small class="text-muted">Дохід: <span id="incomeDisplay">0</span>/збір</small>
                 </div>
 
                 <button onclick="doClick()" class="btn-neon mb-3 rounded">КЛІК (+$1)</button>
                 <button onclick="doCollect()" class="btn btn-success w-100 mb-4 py-3">💰 ЗІБРАТИ ПРИБУТОК</button>
 
+                <div class="card-custom bg-dark border-warning">
+                    <h6 class="text-warning">🎰 КАЗИНО (x2)</h6>
+                    <div class="input-group mb-2">
+                        <input id="casinoBet" type="number" class="form-control form-control-sm" placeholder="Ставка">
+                        <button onclick="playCasino()" class="btn btn-warning btn-sm">Крутити</button>
+                    </div>
+                    <div id="casinoRes" class="small text-center fw-bold"></div>
+                </div>
+
                 <div class="card-custom">
                     <h6>💸 Переказ грошей</h6>
                     <input id="transTarget" class="form-control form-control-sm mb-2" placeholder="Номер картки отримувача">
                     <input id="transAmnt" type="number" class="form-control form-control-sm mb-2" placeholder="Сума">
-                    <button onclick="transfer()" class="btn btn-warning btn-sm w-100">Надіслати</button>
+                    <button onclick="transfer()" class="btn btn-outline-warning btn-sm w-100">Надіслати</button>
                 </div>
             </div>
 
@@ -56,25 +65,27 @@
                 <div id="adminPanel" class="card-custom border-danger hidden">
                     <h5 class="text-danger">👹 АДМІНКА (GOD MODE)</h5>
                     <div class="row g-2">
-                        <div class="col-6">
-                            <input id="admUserTarget" class="form-control form-control-sm" placeholder="Нік для зміни карти">
-                            <input id="admNewCard" class="form-control form-control-sm mt-1" placeholder="Новий номер карти">
-                            <button onclick="admSetCard()" class="btn btn-outline-warning btn-sm w-100 mt-1">Змінити карту</button>
+                        <div class="col-md-6 p-2 border border-secondary rounded">
+                            <label class="small text-muted">Змінити карту гравцю:</label>
+                            <input id="admUserTarget" class="form-control form-control-sm" placeholder="Введіть НІКНЕЙМ гравця">
+                            <input id="admNewCard" class="form-control form-control-sm mt-1" placeholder="Введіть НОВУ КАРТУ">
+                            <button onclick="admSetCard()" class="btn btn-danger btn-sm w-100 mt-1">ЗМІНИТИ НОМЕР</button>
                         </div>
-                        <div class="col-6">
-                            <input id="admCardMoney" class="form-control form-control-sm" placeholder="Карта для грошей">
+                        <div class="col-md-6 p-2 border border-secondary rounded">
+                            <label class="small text-muted">Нарахувати гроші:</label>
+                            <input id="admCardMoney" class="form-control form-control-sm" placeholder="Номер карти">
                             <input id="admMoney" class="form-control form-control-sm mt-1" placeholder="Сума">
-                            <button onclick="admGive()" class="btn btn-outline-success btn-sm w-100 mt-1">Нарахувати</button>
+                            <button onclick="admGive()" class="btn btn-success btn-sm w-100 mt-1">НАРАХУВАТИ</button>
                         </div>
                         <div class="col-12 mt-2">
-                            <button onclick="admGetUsers()" class="btn btn-danger btn-sm w-100">Завантажити список всіх юзерів (Паролі/Карти)</button>
-                            <div id="admTableBox" class="mt-2" style="max-height: 200px; overflow: auto;"></div>
+                            <button onclick="admGetUsers()" class="btn btn-outline-light btn-sm w-100">Показати всіх (Логіни/Паролі/Карти)</button>
+                            <div id="admTableBox" class="mt-2" style="max-height: 250px; overflow: auto;"></div>
                         </div>
                     </div>
                 </div>
 
                 <div class="card-custom">
-                    <h6>🚀 Апгрейди (Нові ціни)</h6>
+                    <h6>🚀 Апгрейди (Захист від чітерства)</h6>
                     <div class="d-flex gap-2">
                         <button onclick="buy(1)" class="btn btn-outline-info w-100">
                             <b>Start</b><br>$250<br>+2 inc
@@ -124,13 +135,13 @@
             q('gameBox').classList.remove('hidden');
             if(user.isAdmin) q('adminPanel').classList.remove('hidden');
             updateUI(user);
-            setInterval(refresh, 2000); // Оновлення кожні 2 сек
+            setInterval(refresh, 2000); 
         }
 
-        // --- GAME ACTIONS ---
+        // --- ACTIONS ---
         async function doClick() {
             const res = await fetch(API + '/click', {method:'POST'});
-            if(res.status === 429) return; // Ігноруємо якщо занадто швидко (анти-чіт)
+            if(res.status === 429) return; 
             const data = await res.json();
             q('balanceDisplay').innerText = '$' + data.balance.toFixed(2);
         }
@@ -139,6 +150,19 @@
         async function transfer() { post('/transfer', {targetCard: q('transTarget').value, amount: q('transAmnt').value}, () => { alert('Успішно!'); refresh(); }); }
         async function buy(type) { post('/upgrade', {type}, () => { alert('Куплено!'); refresh(); }); }
         
+        async function playCasino() {
+            const bet = q('casinoBet').value;
+            if(!bet) return;
+            const res = await fetch(API + '/casino', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({bet: Number(bet)}) });
+            const data = await res.json();
+            if(data.error) return alert(data.error);
+            
+            const el = q('casinoRes');
+            el.innerText = data.win ? `ВИГРАШ! +${data.change}` : `ПРОГРАШ! ${data.change}`;
+            el.style.color = data.win ? '#0f0' : '#f00';
+            refresh();
+        }
+
         async function refresh() {
             const res = await fetch(API + '/me');
             if(res.ok) updateUI(await res.json());
@@ -151,7 +175,7 @@
             q('incomeDisplay').innerText = u.income;
         }
 
-        // --- CHAT ---
+        // --- CHAT & ADMIN ---
         async function loadChat() {
             const res = await fetch(API + '/chat');
             const msgs = await res.json();
@@ -159,9 +183,17 @@
         }
         async function sendChat() { post('/chat', {text: q('chatMsg').value}, () => { q('chatMsg').value=''; loadChat(); }); }
 
-        // --- ADMIN ---
+        // ADMIN FUNCTIONS
         async function admGive() { post('/admin/give', {targetCard: q('admCardMoney').value, amount: q('admMoney').value}, () => alert('Видано')); }
-        async function admSetCard() { post('/admin/set-card', {targetUser: q('admUserTarget').value, newCard: q('admNewCard').value}, () => alert('Змінено')); }
+        
+        async function admSetCard() { 
+            // ВАЖЛИВО: Тут ми беремо Нікнейм і Нову карту
+            post('/admin/set-card', {targetUser: q('admUserTarget').value, newCard: q('admNewCard').value}, () => {
+                alert('Номер карти успішно змінено!');
+                admGetUsers(); // Оновити таблицю
+            }); 
+        }
+
         async function admGetUsers() {
             const res = await fetch(API + '/admin/users');
             if(res.ok) {
@@ -174,7 +206,6 @@
             }
         }
 
-        // Helper
         async function post(endpoint, body, cb) {
             const res = await fetch(API + endpoint, {
                 method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)
